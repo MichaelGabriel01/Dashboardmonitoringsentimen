@@ -6,3 +6,5 @@ transformers
 matplotlib
 seaborn
 scikit-learn
+sentencepiece
+torchvision
