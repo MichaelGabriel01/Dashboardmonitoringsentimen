@@ -1,0 +1,8 @@
+streamlit
+pandas
+google-play-scraper
+torch
+transformers
+matplotlib
+seaborn
+scikit-learn
