@@ -112,7 +112,7 @@ def auto_update(limit_latest=300):
 @st.cache_resource
 def load_teacher_model():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    tokenizer = AutoTokenizer.from_pretrained(MODEL_DIR)
+    tokenizer = AutoTokenizer.from_pretrained("indolem/indobertweet-base-uncased")
     model = AutoModelForSequenceClassification.from_pretrained(MODEL_DIR)
     model.to(device)
     model.eval()
