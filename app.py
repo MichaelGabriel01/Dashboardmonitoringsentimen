@@ -6,7 +6,7 @@ import pandas as pd
 import streamlit as st
 import matplotlib.pyplot as plt
 import seaborn as sns
-from github import Github
+from github import Github, Auth
 from google_play_scraper import reviews_all, reviews, Sort
 import torch
 from torch.utils.data import DataLoader, TensorDataset
@@ -201,9 +201,10 @@ def load_master_dataset():
 def push_to_github(file_path, repo_name):
     try:
         # 1. Login ke GitHub menggunakan Token dari Secrets
-        g = Github(st.secrets["GITHUB_TOKEN"])
-        repo = g.get_repo(repo_name)
+        auth = Auth.Token(st.secrets["GITHUB_TOKEN"])
+        g = Github(auth=auth)
         
+        repo = g.get_repo(repo_name)
         # 2. Baca isi file CSV terbaru yang baru saja di-update lokal
         with open(file_path, 'r', encoding='utf-8') as file:
             updated_content = file.read()
