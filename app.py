@@ -6,7 +6,7 @@ import pandas as pd
 import streamlit as st
 import matplotlib.pyplot as plt
 import seaborn as sns
-
+from github import Github
 from google_play_scraper import reviews_all, reviews, Sort
 import torch
 from torch.utils.data import DataLoader, TensorDataset
@@ -197,6 +197,27 @@ def load_master_dataset():
             columns=["reviewId", "content", "at", "label_id", "label_text", "source"]
         )
 
+# ========== HELPER: GITHUB AUTO-COMMIT ==========
+def push_to_github(file_path, repo_name):
+    try:
+        # 1. Login ke GitHub menggunakan Token dari Secrets
+        g = Github(st.secrets["GITHUB_TOKEN"])
+        repo = g.get_repo(repo_name)
+        
+        # 2. Baca isi file CSV terbaru yang baru saja di-update lokal
+        with open(file_path, 'r', encoding='utf-8') as file:
+            updated_content = file.read()
+            
+        # 3. Dapatkan file lama di GitHub untuk menimpanya
+        contents = repo.get_contents(file_path)
+        repo.update_file(
+            path=contents.path, 
+            message=f"Auto-update dataset {file_path} dari Streamlit", 
+            content=updated_content, 
+            sha=contents.sha
+        )
+    except Exception as e:
+        st.sidebar.error(f"Gagal menyinkronkan {file_path} ke GitHub: {e}")
 
 # ========== LOAD METRICS ==========
 @st.cache_data
@@ -241,6 +262,10 @@ if st.sidebar.button("Update Dataset", key="update_btn_sidebar"):
         else:
             df_new_labeled = pseudo_label_batch(df_new, tokenizer, model, device)
             df_total = merge_to_master(df_new_labeled)
+            st.sidebar.info("Menyinkronkan data permanen ke GitHub...")
+            REPO_NAME = "MichaelGabriel01/Dashboardmonitoringsentimen"
+            push_to_github(MASTER_PATH, REPO_NAME)
+            push_to_github(SCRAPE_FILE, REPO_NAME)
             st.sidebar.success(f"Berhasil update! Total data: {len(df_total)}")
     st.rerun()
 
