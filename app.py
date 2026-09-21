@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-
+from huggingface_hub import login
 import numpy as np
 import pandas as pd
 import streamlit as st
@@ -13,6 +13,15 @@ from torch.utils.data import DataLoader, TensorDataset
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 from tqdm.auto import tqdm
 
+# 1. Panggil token secara aman dari Streamlit Secrets
+if "HF_TOKEN" in st.secrets:
+    hf_token = st.secrets["HF_TOKEN"]
+    # 2. Daftarkan ke environment sistem agar terbaca oleh pustaka Transformers
+    os.environ["HF_TOKEN"] = hf_token
+    # 3. Lakukan login ke Hugging Face Hub
+    login(token=hf_token)
+else:
+    st.warning("⚠️ HF_TOKEN tidak ditemukan di Streamlit Secrets. Aplikasi mungkin berjalan lambat.")
 
 # === PATH FILE CSV ===
 RESULTS_PATH = "indobert_sentiment_test_results.csv"
