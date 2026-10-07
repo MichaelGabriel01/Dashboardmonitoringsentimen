@@ -493,7 +493,7 @@ if len(df_total) > 0:
             height=300,
         )
 
-        csv_live = df_view_live.to_csv(index=False).encode("utf-8")
+        csv_live = display_df[["at", "label_text", "content"]].to_csv(index=False).encode("utf-8")
         st.download_button(
             label="💾 Download CSV Filtered",
             data=csv_live,
