@@ -140,6 +140,7 @@ def pseudo_label_batch(df_new, tokenizer, model, device, batch_size=16):
         return text
 
     df_new = df_new.copy()
+    df_new["clean_content"] = df_new["content"].apply(preprocess_text)
     df_new = df_new[df_new["clean_content"] != ""]
     if df_new.empty:
         return df_new
