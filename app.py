@@ -14,7 +14,7 @@ from transformers import AutoTokenizer, AutoModelForSequenceClassification
 from tqdm.auto import tqdm
 
 
-import os
+import re
 import streamlit as st
 
 # 1. Panggil token secara aman dari Streamlit Secrets
@@ -130,7 +130,21 @@ def load_teacher_model():
 
 
 def pseudo_label_batch(df_new, tokenizer, model, device, batch_size=16):
-    texts = df_new["content"].astype(str).tolist()
+    def preprocess_text(text: str) -> str:
+        text = str(text)
+        text = re.sub(r"http\S+|www\S+|https\S+", " ", text)
+        text = re.sub(r"\d+", " ", text)
+        text = re.sub(r"[^\w\s]", " ", text)
+        text = text.lower()
+        text = re.sub(r"\s+", " ", text).strip()
+        return text
+
+    df_new = df_new.copy()
+    df_new = df_new[df_new["clean_content"] != ""]
+    if df_new.empty:
+        return df_new
+        
+    texts = df_new["clean_content"].tolist()
     enc = tokenizer(
         texts, truncation=True, padding=True, max_length=128, return_tensors="pt"
     )
@@ -157,7 +171,7 @@ def merge_to_master(df_new_labeled):
         df_master = pd.read_csv(MASTER_PATH)
     else:
         df_master = pd.DataFrame(
-            columns=["reviewId", "content", "at", "label_id", "label_text", "source"]
+            columns=["reviewId", "content", "clean_content", "at", "label_id", "label_text"]
         )
 
     if not df_master.empty:
@@ -167,12 +181,12 @@ def merge_to_master(df_new_labeled):
     df_new["reviewId"] = df_new["reviewId"].astype(str)
     df_new["label_id"] = df_new["pseudo_label_id"].astype(int)
     df_new["label_text"] = df_new["pseudo_label"].astype(str)
-    df_new["source"] = "pseudo"
+    
 
     if "at" not in df_new.columns:
         df_new["at"] = pd.NaT
 
-    df_new = df_new[["reviewId", "content", "at", "label_id", "label_text", "source"]]
+    df_new = df_new[["reviewId", "content", "clean_content", "at", "label_id", "label_text"]]
 
     if not df_master.empty:
         existing_ids = set(df_master["reviewId"].tolist())
@@ -187,14 +201,14 @@ def merge_to_master(df_new_labeled):
 def load_master_dataset():
     if os.path.exists(MASTER_PATH):
         df = pd.read_csv(MASTER_PATH)
-        expected = ["reviewId", "content", "at", "label_id", "label_text", "source"]
+        expected = ["reviewId", "content", "clean_content", "at", "label_id", "label_text"]
         for c in expected:
             if c not in df.columns:
                 df[c] = None
         return df[expected]
     else:
         return pd.DataFrame(
-            columns=["reviewId", "content", "at", "label_id", "label_text", "source"]
+            columns=["reviewId", "content", "clean_content", "at", "label_id", "label_text"]
         )
 
 # ========== HELPER: GITHUB AUTO-COMMIT ==========
